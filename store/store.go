@@ -23,12 +23,14 @@ var (
 
 var nightscoutIdentifierNamespace = uuid.UUID{'N', 'i', 'g', 'h', 't', 's', 'c', 'o', 'u', 't', 'R', 'o', 'c', 'k', 's', '!'}
 
+// Filter represents a single field predicate in a storage query.
 type Filter struct {
 	Field string
 	Op    string
 	Value string
 }
 
+// Query describes the storage-level query contract used by the handlers.
 type Query struct {
 	Filters        []Filter
 	Limit          int
@@ -39,6 +41,9 @@ type Query struct {
 	IncludeDeleted bool
 }
 
+// Store abstracts persistence for Nightscout collections.
+//
+// Applications are expected to provide their own implementation.
 type Store interface {
 	Create(ctx context.Context, collection string, data map[string]any, subject string) (model.Record, bool, error)
 	Get(ctx context.Context, collection, identifier string) (model.Record, error)
@@ -51,9 +56,23 @@ type Store interface {
 	LastModified(ctx context.Context, collections []string) (map[string]int64, error)
 }
 
+// NormalizeData normalizes incoming Nightscout payloads into a consistent shape
+// before persistence.
 func NormalizeData(collection string, data map[string]any) (map[string]any, error) {
 	clean := model.CloneMap(data)
 	collection = model.NormalizeCollection(collection)
+
+	if err := normalizeNumericFields(clean,
+		"sgv",
+		"mbg",
+		"carbs",
+		"insulin",
+		"preBolus",
+		"glucose",
+		"uploaderBattery",
+	); err != nil {
+		return nil, err
+	}
 
 	if rawDate, exists := clean["date"]; exists && rawDate != nil {
 		millis, offset, err := parseDateValue(rawDate)
@@ -115,6 +134,8 @@ func NormalizeData(collection string, data map[string]any) (map[string]any, erro
 	return clean, nil
 }
 
+// CalculateIdentifier derives a deterministic identifier from fields commonly
+// used by Nightscout documents.
 func CalculateIdentifier(data map[string]any) string {
 	device, ok := model.StringField(data, "device")
 	if !ok || strings.TrimSpace(device) == "" {
@@ -131,6 +152,7 @@ func CalculateIdentifier(data map[string]any) string {
 	return uuid.NewSHA1(nightscoutIdentifierNamespace, []byte(key)).String()
 }
 
+// DefaultQuery returns the default query shape used by list-style endpoints.
 func DefaultQuery() Query {
 	return Query{
 		Limit:          10,
@@ -140,6 +162,7 @@ func DefaultQuery() Query {
 	}
 }
 
+// ApplyQuery filters, sorts, skips, and limits a record set in memory.
 func ApplyQuery(records []model.Record, query Query) []model.Record {
 	filtered := make([]model.Record, 0, len(records))
 	for _, record := range records {
@@ -163,6 +186,7 @@ func ApplyQuery(records []model.Record, query Query) []model.Record {
 	return filtered
 }
 
+// SelectFields projects a record to the requested fields.
 func SelectFields(record model.Record, fields []string) map[string]any {
 	full := record.ToMap(true)
 	if len(fields) == 0 {
@@ -180,10 +204,12 @@ func SelectFields(record model.Record, fields []string) map[string]any {
 	return out
 }
 
+// GenerateIdentifier returns a new opaque identifier.
 func GenerateIdentifier() string {
 	return uuid.NewString()
 }
 
+// DedupeKey builds a collection-specific deduplication key.
 func DedupeKey(collection string, data map[string]any) string {
 	collection = model.NormalizeCollection(collection)
 	switch collection {
@@ -305,6 +331,7 @@ func matchFilter(value any, filter Filter) bool {
 	}
 }
 
+// CompareValues compares values using numeric, time, then string semantics.
 func CompareValues(left, right any, desc bool) bool {
 	if leftNum, err := toFloat64(left); err == nil {
 		if rightNum, err := toFloat64(right); err == nil {
@@ -497,4 +524,23 @@ func parseDateValue(value any) (int64, *int, error) {
 	default:
 		return 0, nil, fmt.Errorf("bad date")
 	}
+}
+
+func normalizeNumericFields(data map[string]any, fields ...string) error {
+	for _, field := range fields {
+		value, ok := data[field]
+		if !ok || value == nil {
+			continue
+		}
+		number, err := toFloat64(value)
+		if err != nil {
+			return fmt.Errorf("bad numeric field %s", field)
+		}
+		if number == float64(int64(number)) {
+			data[field] = int64(number)
+			continue
+		}
+		data[field] = number
+	}
+	return nil
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/glycoview/nightscout-api/util"
 )
 
+// TreatmentsList lists treatments using the Nightscout v1 query format.
 func TreatmentsList(dep deps.Dependencies) func(http.ResponseWriter, *http.Request, *auth.Identity) {
 	return func(w http.ResponseWriter, r *http.Request, identity *auth.Identity) {
 		query := query.ParseV1(r.URL.Query(), "created_at")
@@ -23,6 +24,7 @@ func TreatmentsList(dep deps.Dependencies) func(http.ResponseWriter, *http.Reque
 	}
 }
 
+// TreatmentsCreate creates one or more treatments.
 func TreatmentsCreate(dep deps.Dependencies) func(http.ResponseWriter, *http.Request, *auth.Identity) {
 	return func(w http.ResponseWriter, r *http.Request, identity *auth.Identity) {
 		var body any
@@ -57,6 +59,7 @@ func TreatmentsCreate(dep deps.Dependencies) func(http.ResponseWriter, *http.Req
 	}
 }
 
+// TreatmentsDelete deletes treatments matching the supplied v1 query.
 func TreatmentsDelete(dep deps.Dependencies) func(http.ResponseWriter, *http.Request, *auth.Identity) {
 	return func(w http.ResponseWriter, r *http.Request, identity *auth.Identity) {
 		query := query.ParseV1(r.URL.Query(), "created_at")

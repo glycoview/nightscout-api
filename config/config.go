@@ -2,6 +2,7 @@ package config
 
 import "errors"
 
+// Config collects runtime settings used by the routers and handlers.
 type Config struct {
 	APISecret    string
 	JWTSecret    string
@@ -11,6 +12,8 @@ type Config struct {
 	AppVersion   string
 }
 
+// WithDefaults applies library defaults to empty fields and returns the
+// resulting configuration.
 func (c Config) WithDefaults() Config {
 	if c.APISecret == "" {
 		c.APISecret = "change-me"
@@ -34,6 +37,7 @@ func (c Config) WithDefaults() Config {
 	return c
 }
 
+// Validate returns an error when required configuration is missing.
 func (c Config) Validate() error {
 	if c.APISecret == "" {
 		return errors.New("api secret is required")

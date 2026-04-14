@@ -8,6 +8,8 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// NewNightscoutV1Router constructs a router that serves the supported
+// Nightscout API v1 endpoints.
 func NewNightscoutV1Router(dep deps.Dependencies) http.Handler {
 	r := chi.NewRouter()
 
@@ -18,7 +20,7 @@ func NewNightscoutV1Router(dep deps.Dependencies) http.Handler {
 	registerDeviceStatusRoutes(r, dep)
 	registerProfileRoutes(r, dep)
 	registerSettingRoutes(r, dep)
-	registerSettingRoutes(r, dep)
+	registerFoodRoutes(r, dep)
 
 	return r
 }

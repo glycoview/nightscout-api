@@ -1,5 +1,7 @@
 package model
 
+// DeviceStatus describes the public fields commonly used in Nightscout device
+// status documents.
 type DeviceStatus struct {
 	Identifier string         `json:"identifier,omitempty"`
 	CreatedAt  string         `json:"created_at,omitempty"`

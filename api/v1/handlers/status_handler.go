@@ -10,6 +10,7 @@ import (
 	"github.com/glycoview/nightscout-api/httpx"
 )
 
+// StatusJSON serves the v1 JSON status payload.
 func StatusJSON(dep deps.Dependencies) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteJSON(w, http.StatusOK, map[string]any{
@@ -22,6 +23,7 @@ func StatusJSON(dep deps.Dependencies) http.HandlerFunc {
 	}
 }
 
+// StatusTxt serves the plain-text status response.
 func StatusTxt(dep deps.Dependencies) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
@@ -29,6 +31,7 @@ func StatusTxt(dep deps.Dependencies) http.HandlerFunc {
 	}
 }
 
+// StatusHtml serves a minimal HTML status response.
 func StatusHtml(dep deps.Dependencies) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
@@ -36,6 +39,7 @@ func StatusHtml(dep deps.Dependencies) http.HandlerFunc {
 	}
 }
 
+// StatusJs serves the browser-oriented JavaScript status payload.
 func StatusJs(dep deps.Dependencies) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/javascript")
@@ -43,12 +47,14 @@ func StatusJs(dep deps.Dependencies) http.HandlerFunc {
 	}
 }
 
+// StatusSvg redirects to a badge-style SVG status image.
 func StatusSvg(dep deps.Dependencies) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "https://img.shields.io/badge/Nightscout-OK-green.svg", http.StatusFound)
 	}
 }
 
+// StatusPng redirects to a badge-style PNG status image.
 func StatusPng(dep deps.Dependencies) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "http://img.shields.io/badge/Nightscout-OK-green.png", http.StatusFound)

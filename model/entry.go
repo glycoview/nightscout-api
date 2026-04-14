@@ -1,5 +1,7 @@
 package model
 
+// Entry describes the public fields commonly used in Nightscout entry
+// documents.
 type Entry struct {
 	Identifier string         `json:"identifier,omitempty"`
 	Type       string         `json:"type,omitempty"`

@@ -10,6 +10,7 @@ import (
 	"github.com/glycoview/nightscout-api/util"
 )
 
+// ProfileList returns recent profile documents ordered by creation time.
 func ProfileList(dep deps.Dependencies) func(http.ResponseWriter, *http.Request, *auth.Identity) {
 	return func(w http.ResponseWriter, r *http.Request, identity *auth.Identity) {
 		records, err := dep.Store.Search(r.Context(), "profile", store.Query{Limit: 100, SortField: "created_at", SortDesc: true})

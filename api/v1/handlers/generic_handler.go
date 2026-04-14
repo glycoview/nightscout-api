@@ -11,6 +11,8 @@ import (
 	"github.com/glycoview/nightscout-api/util"
 )
 
+// GenericCollectionList lists records for a collection that follows the common
+// Nightscout list conventions.
 func GenericCollectionList(dep deps.Dependencies, collection, defaultDateField string) func(http.ResponseWriter, *http.Request, *auth.Identity) {
 	return func(w http.ResponseWriter, r *http.Request, identity *auth.Identity) {
 		query := query.ParseV1(r.URL.Query(), defaultDateField)
@@ -23,6 +25,7 @@ func GenericCollectionList(dep deps.Dependencies, collection, defaultDateField s
 	}
 }
 
+// GenericCollectionCreate creates one or more records in a generic collection.
 func GenericCollectionCreate(dep deps.Dependencies, collection string) func(http.ResponseWriter, *http.Request, *auth.Identity) {
 	return func(w http.ResponseWriter, r *http.Request, identity *auth.Identity) {
 		var body any
@@ -61,6 +64,8 @@ func GenericCollectionCreate(dep deps.Dependencies, collection string) func(http
 	}
 }
 
+// GenericCollectionDelete deletes records from a generic collection using the
+// v1 query syntax.
 func GenericCollectionDelete(dep deps.Dependencies, collection, defaultDateField string) func(http.ResponseWriter, *http.Request, *auth.Identity) {
 	return func(w http.ResponseWriter, r *http.Request, identity *auth.Identity) {
 		query := query.ParseV1(r.URL.Query(), defaultDateField)

@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+// Record is the normalized internal representation used by the storage layer.
 type Record struct {
 	Collection  string
 	ID          string
@@ -21,12 +22,14 @@ type Record struct {
 	DeletedAt   *int64
 }
 
+// Clone returns a deep copy of the record and its payload map.
 func (r Record) Clone() Record {
 	clone := r
 	clone.Data = CloneMap(r.Data)
 	return clone
 }
 
+// Identifier returns the stable public identifier for the record.
 func (r Record) Identifier() string {
 	if id, ok := StringField(r.Data, "identifier"); ok && id != "" {
 		return id
@@ -37,12 +40,16 @@ func (r Record) Identifier() string {
 	return r.ID
 }
 
+// WithData returns a cloned record with replaced payload data.
 func (r Record) WithData(data map[string]any) Record {
 	clone := r.Clone()
 	clone.Data = CloneMap(data)
 	return clone
 }
 
+// ToMap converts the record into a JSON-friendly map.
+//
+// When includeMeta is true, server-managed metadata fields are included.
 func (r Record) ToMap(includeMeta bool) map[string]any {
 	out := CloneMap(r.Data)
 	id := r.Identifier()
@@ -62,6 +69,7 @@ func (r Record) ToMap(includeMeta bool) map[string]any {
 	return out
 }
 
+// CloneMap deep-copies a JSON-like map structure.
 func CloneMap(in map[string]any) map[string]any {
 	if in == nil {
 		return map[string]any{}
@@ -88,12 +96,14 @@ func CloneMap(in map[string]any) map[string]any {
 	return out
 }
 
+// Merge returns a shallow field merge of src into dst.
 func Merge(dst, src map[string]any) map[string]any {
 	out := CloneMap(dst)
 	maps.Copy(out, src)
 	return out
 }
 
+// StringField reads a field as a string when possible.
 func StringField(data map[string]any, key string) (string, bool) {
 	val, ok := data[key]
 	if !ok || val == nil {
@@ -111,6 +121,7 @@ func StringField(data map[string]any, key string) (string, bool) {
 	}
 }
 
+// Int64Field reads a field as an int64 when possible.
 func Int64Field(data map[string]any, key string) (int64, bool) {
 	val, ok := data[key]
 	if !ok || val == nil {
@@ -141,6 +152,7 @@ func Int64Field(data map[string]any, key string) (int64, bool) {
 	}
 }
 
+// BoolField reads a field as a bool when possible.
 func BoolField(data map[string]any, key string) (bool, bool) {
 	val, ok := data[key]
 	if !ok || val == nil {
@@ -157,6 +169,8 @@ func BoolField(data map[string]any, key string) (bool, bool) {
 	}
 }
 
+// ToUTCString normalizes a timestamp string into Nightscout's UTC format and
+// returns the original offset in minutes.
 func ToUTCString(value string) (string, int, error) {
 	parsed, err := time.Parse(time.RFC3339Nano, value)
 	if err != nil {
@@ -180,6 +194,8 @@ func ToUTCString(value string) (string, int, error) {
 	return parsed.UTC().Format("2006-01-02T15:04:05.000Z"), offsetSeconds / 60, nil
 }
 
+// NormalizeCollection maps aliases used by clients to canonical collection
+// names.
 func NormalizeCollection(collection string) string {
 	clean := strings.ToLower(strings.TrimSpace(collection))
 	switch clean {
@@ -194,6 +210,8 @@ func NormalizeCollection(collection string) string {
 	}
 }
 
+// PathValue returns a nested value from a JSON-like object using dot or bracket
+// notation.
 func PathValue(data map[string]any, path string) any {
 	if data == nil || path == "" {
 		return nil

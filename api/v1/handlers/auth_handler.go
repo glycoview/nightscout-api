@@ -7,6 +7,7 @@ import (
 	"github.com/glycoview/nightscout-api/httpx"
 )
 
+// VerifyAuth implements the v1 verifyauth endpoint.
 func VerifyAuth(dep deps.Dependencies) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		identity, err := dep.Auth.AuthenticateExplicit(r)

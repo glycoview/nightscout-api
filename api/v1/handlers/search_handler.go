@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// Versions reports the API versions exposed by this server.
 func Versions() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteJSON(w, http.StatusOK, []map[string]string{
@@ -21,19 +22,22 @@ func Versions() http.HandlerFunc {
 	}
 }
 
+// EchoRoute returns the parsed v1 query for debugging client requests.
 func EchoRoute(_ deps.Dependencies) func(http.ResponseWriter, *http.Request, *auth.Identity) {
 	return func(w http.ResponseWriter, r *http.Request, identity *auth.Identity) {
 		httpx.WriteJSON(w, http.StatusOK, query.EchoV1(chi.URLParam(r, "collection"), r.URL.Query()))
 	}
 }
 
+// SliceRoute implements the v1 prefix-slice endpoint.
 func SliceRoute(dep deps.Dependencies) func(http.ResponseWriter, *http.Request, *auth.Identity) {
 	return func(w http.ResponseWriter, r *http.Request, identity *auth.Identity) {
 		collection := chi.URLParam(r, "collection")
 		q := query.ParseV1(r.URL.Query(), "date")
 		q.Filters = util.StripImplicitDateFilters(q.Filters)
-		q.Limit = max(q.Limit, 1000)
-		records, err := dep.Store.Search(r.Context(), collection, q)
+		searchQuery := q
+		searchQuery.Limit = 1000
+		records, err := dep.Store.Search(r.Context(), collection, searchQuery)
 		if err != nil {
 			httpx.WriteJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
 			return
@@ -43,6 +47,7 @@ func SliceRoute(dep deps.Dependencies) func(http.ResponseWriter, *http.Request, 
 	}
 }
 
+// TimesEchoRoute returns the expanded modal-time patterns used by TimesRoute.
 func TimesEchoRoute(_ deps.Dependencies) func(http.ResponseWriter, *http.Request, *auth.Identity) {
 	return func(w http.ResponseWriter, r *http.Request, identity *auth.Identity) {
 		prefix, expr, ok := util.ParseTimesWildcard(r)
@@ -58,6 +63,7 @@ func TimesEchoRoute(_ deps.Dependencies) func(http.ResponseWriter, *http.Request
 	}
 }
 
+// TimesRoute implements the v1 modal-time query endpoint.
 func TimesRoute(dep deps.Dependencies) func(http.ResponseWriter, *http.Request, *auth.Identity) {
 	return func(w http.ResponseWriter, r *http.Request, identity *auth.Identity) {
 		prefix, expr, ok := util.ParseTimesWildcard(r)
@@ -67,8 +73,9 @@ func TimesRoute(dep deps.Dependencies) func(http.ResponseWriter, *http.Request, 
 		}
 		q := query.ParseV1(r.URL.Query(), "date")
 		q.Filters = util.StripImplicitDateFilters(q.Filters)
-		q.Limit = max(q.Limit, 1000)
-		records, err := dep.Store.Search(r.Context(), "entries", q)
+		searchQuery := q
+		searchQuery.Limit = 1000
+		records, err := dep.Store.Search(r.Context(), "entries", searchQuery)
 		if err != nil {
 			httpx.WriteJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
 			return

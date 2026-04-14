@@ -17,6 +17,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// Version reports the application and API version metadata for API v3.
 func Version(dep deps.Dependencies) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteJSON(w, http.StatusOK, map[string]any{
@@ -30,6 +31,7 @@ func Version(dep deps.Dependencies) http.HandlerFunc {
 	}
 }
 
+// Status returns a lightweight authenticated health payload for API v3.
 func Status(_ deps.Dependencies) func(http.ResponseWriter, *http.Request, *auth.Identity) {
 	return func(w http.ResponseWriter, r *http.Request, identity *auth.Identity) {
 		httpx.WriteJSON(w, http.StatusOK, map[string]any{
@@ -41,12 +43,15 @@ func Status(_ deps.Dependencies) func(http.ResponseWriter, *http.Request, *auth.
 	}
 }
 
+// Test is a minimal authenticated endpoint used for API v3 connectivity checks.
 func Test(_ deps.Dependencies) func(http.ResponseWriter, *http.Request, *auth.Identity) {
 	return func(w http.ResponseWriter, r *http.Request, identity *auth.Identity) {
 		httpx.WriteJSON(w, http.StatusOK, map[string]any{"status": http.StatusOK, "result": "ok"})
 	}
 }
 
+// LastModified returns the newest modification timestamp for each known
+// collection.
 func LastModified(dep deps.Dependencies) func(http.ResponseWriter, *http.Request, *auth.Identity) {
 	return func(w http.ResponseWriter, r *http.Request, identity *auth.Identity) {
 		collections := []string{"entries", "treatments", "devicestatus", "profile", "food", "settings"}
@@ -65,6 +70,7 @@ func LastModified(dep deps.Dependencies) func(http.ResponseWriter, *http.Request
 	}
 }
 
+// Search implements collection search for API v3.
 func Search(dep deps.Dependencies) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		collection := chi.URLParam(r, "collection")
@@ -104,6 +110,7 @@ func Search(dep deps.Dependencies) http.HandlerFunc {
 	}
 }
 
+// Create creates a document in an API v3 collection.
 func Create(dep deps.Dependencies) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		collection := chi.URLParam(r, "collection")
@@ -164,6 +171,7 @@ func Create(dep deps.Dependencies) http.HandlerFunc {
 	}
 }
 
+// Read returns a single document from an API v3 collection.
 func Read(dep deps.Dependencies) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		collection := chi.URLParam(r, "collection")
@@ -191,6 +199,8 @@ func Read(dep deps.Dependencies) http.HandlerFunc {
 	}
 }
 
+// Update replaces a document in an API v3 collection and supports upsert
+// semantics when allowed by the caller's permissions.
 func Update(dep deps.Dependencies) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		collection := chi.URLParam(r, "collection")
@@ -242,14 +252,19 @@ func Update(dep deps.Dependencies) http.HandlerFunc {
 			}
 			httpx.LastModifiedHeader(w, record.SrvModified)
 			status := http.StatusOK
+			body := map[string]any{"status": http.StatusOK, "result": selectV3Fields(record, nil)}
 			if created {
 				status = http.StatusCreated
+				body["status"] = status
+				body["identifier"] = record.Identifier()
+				body["lastModified"] = record.SrvModified
 			}
-			httpx.WriteJSON(w, status, map[string]any{"status": status, "result": selectV3Fields(record, nil)})
+			httpx.WriteJSON(w, status, body)
 		}).ServeHTTP(w, r)
 	}
 }
 
+// Patch applies a partial update to an API v3 document.
 func Patch(dep deps.Dependencies) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		collection := chi.URLParam(r, "collection")
@@ -290,6 +305,7 @@ func Patch(dep deps.Dependencies) http.HandlerFunc {
 	}
 }
 
+// Remove soft-deletes or permanently deletes an API v3 document.
 func Remove(dep deps.Dependencies) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		collection := chi.URLParam(r, "collection")
@@ -311,6 +327,7 @@ func Remove(dep deps.Dependencies) http.HandlerFunc {
 	}
 }
 
+// History returns document revisions modified since the supplied timestamp.
 func History(dep deps.Dependencies) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		collection := chi.URLParam(r, "collection")
@@ -408,6 +425,10 @@ func normalizeV3Document(collection string, doc map[string]any) (map[string]any,
 		switch err.Error() {
 		case "bad or missing date field":
 			return nil, fmt.Errorf("Bad or missing date field")
+		case "bad or missing utcOffset field":
+			return nil, fmt.Errorf("Bad or missing utcOffset field")
+		case "bad created_at field":
+			return nil, fmt.Errorf("Bad created_at field")
 		default:
 			return nil, err
 		}

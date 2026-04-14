@@ -7,6 +7,8 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// NewNightscoutV3Router constructs a router that serves the supported
+// Nightscout API v3 endpoints.
 func NewNightscoutV3Router(dep deps.Dependencies) http.Handler {
 	r := chi.NewRouter()
 

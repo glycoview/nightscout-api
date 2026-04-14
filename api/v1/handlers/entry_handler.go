@@ -13,6 +13,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// EntriesCurrent returns the newest entry.
 func EntriesCurrent(dep deps.Dependencies) func(http.ResponseWriter, *http.Request, *auth.Identity) {
 	return func(w http.ResponseWriter, r *http.Request, identity *auth.Identity) {
 		query := store.DefaultQuery()
@@ -26,6 +27,7 @@ func EntriesCurrent(dep deps.Dependencies) func(http.ResponseWriter, *http.Reque
 	}
 }
 
+// EntriesList lists entries using the Nightscout v1 query format.
 func EntriesList(dep deps.Dependencies) func(http.ResponseWriter, *http.Request, *auth.Identity) {
 	return func(w http.ResponseWriter, r *http.Request, identity *auth.Identity) {
 		query := query.ParseV1(r.URL.Query(), "date")
@@ -38,6 +40,8 @@ func EntriesList(dep deps.Dependencies) func(http.ResponseWriter, *http.Request,
 	}
 }
 
+// EntriesSpec resolves entry sub-routes such as current, sgv, mbg, or a
+// specific identifier.
 func EntriesSpec(dep deps.Dependencies) func(http.ResponseWriter, *http.Request, *auth.Identity) {
 	return func(w http.ResponseWriter, r *http.Request, identity *auth.Identity) {
 		spec := chi.URLParam(r, "spec")
@@ -67,6 +71,7 @@ func EntriesSpec(dep deps.Dependencies) func(http.ResponseWriter, *http.Request,
 	}
 }
 
+// EntriesCreate creates entries or returns a preview when persist is false.
 func EntriesCreate(dep deps.Dependencies, persist bool) func(http.ResponseWriter, *http.Request, *auth.Identity) {
 	return func(w http.ResponseWriter, r *http.Request, identity *auth.Identity) {
 		var body any
@@ -130,6 +135,7 @@ func EntriesCreate(dep deps.Dependencies, persist bool) func(http.ResponseWriter
 	}
 }
 
+// EntriesDelete deletes entries matching the supplied v1 query.
 func EntriesDelete(dep deps.Dependencies) func(http.ResponseWriter, *http.Request, *auth.Identity) {
 	return func(w http.ResponseWriter, r *http.Request, identity *auth.Identity) {
 		query := query.ParseV1(r.URL.Query(), "date")

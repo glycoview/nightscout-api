@@ -11,6 +11,8 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// StripImplicitDateFilters removes the default rolling-window filters injected
+// by ParseV1 so slice/times style endpoints can search across larger ranges.
 func StripImplicitDateFilters(filters []store.Filter) []store.Filter {
 	out := make([]store.Filter, 0, len(filters))
 	for _, filter := range filters {
@@ -25,6 +27,7 @@ func StripImplicitDateFilters(filters []store.Filter) []store.Filter {
 	return out
 }
 
+// WriteRecords serializes records using the public Nightscout response shape.
 func WriteRecords(w http.ResponseWriter, records []model.Record, fields []string) {
 	response := make([]map[string]any, 0, len(records))
 	for _, record := range records {
@@ -37,6 +40,8 @@ func WriteRecords(w http.ResponseWriter, records []model.Record, fields []string
 	httpx.WriteJSON(w, http.StatusOK, response)
 }
 
+// ParseTimesWildcard extracts the `prefix/expr` wildcard payload used by the
+// v1 /times endpoints.
 func ParseTimesWildcard(r *http.Request) (prefix, expr string, ok bool) {
 	wild := chi.URLParam(r, "*")
 	parts := strings.SplitN(wild, "/", 2)

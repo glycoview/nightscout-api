@@ -16,6 +16,8 @@ import (
 
 var bracePattern = regexp.MustCompile(`\{([^{}]+)\}`)
 
+// ParseV1 translates Nightscout v1 query parameters into the storage query
+// model used by this library.
 func ParseV1(values url.Values, defaultDateField string) store.Query {
 	query := store.DefaultQuery()
 	if defaultDateField == "" {
@@ -44,14 +46,16 @@ func ParseV1(values url.Values, defaultDateField string) store.Query {
 		query.Filters = append(query.Filters, store.Filter{
 			Field: defaultDateField,
 			Op:    "gte",
-			Value: time.Now().UTC().Add(-48 * time.Hour).Format(time.RFC3339),
+			Value: time.Now().UTC().Add(-96 * time.Hour).Format(time.RFC3339),
 		})
 	}
 	return query
 }
 
+// ParseV3 translates Nightscout API v3 query parameters into a storage query.
 func ParseV3(values url.Values) (store.Query, error) {
 	query := store.DefaultQuery()
+	query.Limit = 0
 	query.SortField = "date"
 	query.IncludeDeleted = false
 	if values.Has("sort") && values.Has("sort$desc") {
@@ -100,6 +104,7 @@ func ParseV3(values url.Values) (store.Query, error) {
 	return query, nil
 }
 
+// EchoV1 returns a diagnostic view of the parsed v1 query.
 func EchoV1(collection string, values url.Values) map[string]any {
 	query := ParseV1(values, "date")
 	return map[string]any{
@@ -111,6 +116,8 @@ func EchoV1(collection string, values url.Values) map[string]any {
 	}
 }
 
+// Slice filters records by prefix matching on a selected field and optionally a
+// Nightscout entry type.
 func Slice(records []model.Record, field, fieldType, prefix string, limit int) []model.Record {
 	if prefix == "" {
 		return records
@@ -137,6 +144,8 @@ func Slice(records []model.Record, field, fieldType, prefix string, limit int) [
 	return filtered
 }
 
+// Times filters records by modal time patterns built from a prefix and
+// expression and returns both the filtered records and the generated patterns.
 func Times(records []model.Record, prefix, expr string, limit int) ([]model.Record, []string) {
 	prefixes := ExpandBraces(prefix)
 	expressions := ExpandBraces(expr)
@@ -146,7 +155,16 @@ func Times(records []model.Record, prefix, expr string, limit int) ([]model.Reco
 	}
 	for _, p := range prefixes {
 		for _, e := range expressions {
-			patterns = append(patterns, p+e)
+			switch {
+			case p == "":
+				patterns = append(patterns, e)
+			case e == "":
+				patterns = append(patterns, p)
+			case strings.HasPrefix(e, ".*"):
+				patterns = append(patterns, p+e)
+			default:
+				patterns = append(patterns, p+".*"+e)
+			}
 		}
 	}
 	filtered := make([]model.Record, 0, len(records))
@@ -170,9 +188,11 @@ func Times(records []model.Record, prefix, expr string, limit int) ([]model.Reco
 	return filtered, patterns
 }
 
+// ExpandBraces performs simple brace expansion used by the v1 slice/times
+// query helpers.
 func ExpandBraces(input string) []string {
 	if input == "" {
-		return nil
+		return []string{""}
 	}
 	if !strings.Contains(input, "{") {
 		return []string{input}
@@ -211,10 +231,6 @@ func parseBracketFilter(key string) (field, op string) {
 func parseV3Filter(key string) (field, op string) {
 	if strings.Contains(key, "$") {
 		parts := strings.SplitN(key, "$", 2)
-		return parts[0], parts[1]
-	}
-	if strings.Contains(key, "_") {
-		parts := strings.SplitN(key, "_", 2)
 		return parts[0], parts[1]
 	}
 	return key, "eq"

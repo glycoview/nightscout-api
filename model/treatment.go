@@ -1,5 +1,7 @@
 package model
 
+// Treatment describes the public fields commonly used in Nightscout treatment
+// documents.
 type Treatment struct {
 	Identifier  string         `json:"identifier,omitempty"`
 	EventType   string         `json:"eventType,omitempty"`
