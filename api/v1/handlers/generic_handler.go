@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/glycoview/nightscout-api/auth"
 	"github.com/glycoview/nightscout-api/deps"
@@ -10,6 +11,28 @@ import (
 	"github.com/glycoview/nightscout-api/query"
 	"github.com/glycoview/nightscout-api/util"
 )
+
+// ensureV1Timestamp fills in date/created_at when missing. Nightscout v1
+// clients (Trio, xDrip, etc.) routinely POST treatments, devicestatus, and
+// food without a timestamp and expect the server to default to now.
+func ensureV1Timestamp(doc map[string]any) {
+	if doc == nil {
+		return
+	}
+	hasDate := false
+	if _, ok := doc["date"]; ok && doc["date"] != nil {
+		hasDate = true
+	}
+	if value, ok := model.StringField(doc, "created_at"); ok && value != "" {
+		hasDate = true
+	}
+	if hasDate {
+		return
+	}
+	now := time.Now().UTC()
+	doc["created_at"] = now.Format("2006-01-02T15:04:05.000Z")
+	doc["date"] = now.UnixMilli()
+}
 
 // GenericCollectionList lists records for a collection that follows the common
 // Nightscout list conventions.
@@ -36,6 +59,7 @@ func GenericCollectionCreate(dep deps.Dependencies, collection string) func(http
 		var created []model.Record
 		switch typed := body.(type) {
 		case map[string]any:
+			ensureV1Timestamp(typed)
 			record, _, err := dep.Store.Create(r.Context(), collection, typed, identity.Name)
 			if err != nil {
 				httpx.WriteJSON(w, http.StatusBadRequest, map[string]any{"status": http.StatusBadRequest, "message": err.Error()})
@@ -49,6 +73,7 @@ func GenericCollectionCreate(dep deps.Dependencies, collection string) func(http
 					httpx.WriteJSON(w, http.StatusBadRequest, map[string]any{"status": http.StatusBadRequest})
 					return
 				}
+				ensureV1Timestamp(doc)
 				record, _, err := dep.Store.Create(r.Context(), collection, doc, identity.Name)
 				if err != nil {
 					httpx.WriteJSON(w, http.StatusBadRequest, map[string]any{"status": http.StatusBadRequest, "message": err.Error()})

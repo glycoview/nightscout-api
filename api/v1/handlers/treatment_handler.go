@@ -34,6 +34,7 @@ func TreatmentsCreate(dep deps.Dependencies) func(http.ResponseWriter, *http.Req
 		}
 		switch typed := body.(type) {
 		case map[string]any:
+			ensureV1Timestamp(typed)
 			if _, _, err := dep.Store.Create(r.Context(), "treatments", typed, identity.Name); err != nil {
 				httpx.WriteJSON(w, http.StatusBadRequest, map[string]any{"status": http.StatusBadRequest, "message": err.Error()})
 				return
@@ -45,6 +46,7 @@ func TreatmentsCreate(dep deps.Dependencies) func(http.ResponseWriter, *http.Req
 					httpx.WriteJSON(w, http.StatusBadRequest, map[string]any{"status": http.StatusBadRequest})
 					return
 				}
+				ensureV1Timestamp(doc)
 				if _, _, err := dep.Store.Create(r.Context(), "treatments", doc, identity.Name); err != nil {
 					httpx.WriteJSON(w, http.StatusBadRequest, map[string]any{"status": http.StatusBadRequest, "message": err.Error()})
 					return
