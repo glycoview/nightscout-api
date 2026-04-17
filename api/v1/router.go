@@ -61,8 +61,10 @@ func registerTreatmentRoutes(r *chi.Mux, dep deps.Dependencies) {
 	r.Get("/treatments.json", dep.Auth.Require("api:treatments:read", true, handlers.TreatmentsList(dep)))
 	r.Post("/treatments", dep.Auth.Require("api:treatments:create", false, handlers.TreatmentsCreate(dep)))
 	r.Post("/treatments/", dep.Auth.Require("api:treatments:create", false, handlers.TreatmentsCreate(dep)))
+	r.Post("/treatments.json", dep.Auth.Require("api:treatments:create", false, handlers.TreatmentsCreate(dep)))
 	r.Delete("/treatments", dep.Auth.Require("api:treatments:delete", false, handlers.TreatmentsDelete(dep)))
 	r.Delete("/treatments/", dep.Auth.Require("api:treatments:delete", false, handlers.TreatmentsDelete(dep)))
+	r.Delete("/treatments.json", dep.Auth.Require("api:treatments:delete", false, handlers.TreatmentsDelete(dep)))
 }
 
 func registerDeviceStatusRoutes(r *chi.Mux, dep deps.Dependencies) {
@@ -70,8 +72,10 @@ func registerDeviceStatusRoutes(r *chi.Mux, dep deps.Dependencies) {
 	r.Get("/devicestatus.json", dep.Auth.Require("api:devicestatus:read", true, handlers.GenericCollectionList(dep, "devicestatus", "created_at")))
 	r.Post("/devicestatus", dep.Auth.Require("api:devicestatus:create", false, handlers.GenericCollectionCreate(dep, "devicestatus")))
 	r.Post("/devicestatus/", dep.Auth.Require("api:devicestatus:create", false, handlers.GenericCollectionCreate(dep, "devicestatus")))
+	r.Post("/devicestatus.json", dep.Auth.Require("api:devicestatus:create", false, handlers.GenericCollectionCreate(dep, "devicestatus")))
 	r.Delete("/devicestatus", dep.Auth.Require("api:devicestatus:delete", false, handlers.GenericCollectionDelete(dep, "devicestatus", "created_at")))
 	r.Delete("/devicestatus/", dep.Auth.Require("api:devicestatus:delete", false, handlers.GenericCollectionDelete(dep, "devicestatus", "created_at")))
+	r.Delete("/devicestatus.json", dep.Auth.Require("api:devicestatus:delete", false, handlers.GenericCollectionDelete(dep, "devicestatus", "created_at")))
 }
 
 func registerProfileRoutes(r *chi.Mux, dep deps.Dependencies) {
